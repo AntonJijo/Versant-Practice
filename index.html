@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Versant Style English Test</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body class="bg-slate-900 text-slate-100 font-inter">
+    <div id="app" class="min-h-screen flex flex-col">
+      <header
+        class="border-b border-slate-800 bg-slate-900/80 backdrop-blur-sm sticky top-0 z-20"
+      >
+        <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <span
+              class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400 font-semibold"
+            >
+              VT
+            </span>
+            <h1 class="text-lg sm:text-xl font-semibold tracking-tight">
+              Versant Style English Test
+            </h1>
+          </div>
+          <button
+            id="openInstructions"
+            class="hidden sm:inline-flex items-center gap-2 rounded-full border border-slate-700 px-4 py-2 text-sm font-medium hover:border-emerald-400 hover:text-emerald-300 transition"
+          >
+            Instructions
+          </button>
+        </div>
+        <div class="border-t border-slate-800 bg-slate-900">
+          <div class="max-w-5xl mx-auto px-4 py-2">
+            <div class="flex items-center gap-3 text-xs uppercase tracking-[0.2em] text-slate-400">
+              <span>Progress</span>
+              <div class="grow h-2 rounded-full bg-slate-800 overflow-hidden">
+                <div
+                  id="progressBar"
+                  class="h-full w-0 rounded-full bg-gradient-to-r from-emerald-400 via-sky-400 to-indigo-500 transition-all duration-500"
+                ></div>
+              </div>
+              <span id="progressLabel" class="font-semibold text-slate-300">0%</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="flex-1">
+        <!-- Start Screen -->
+        <section
+          id="startScreen"
+          class="max-w-3xl mx-auto px-4 py-16 text-center flex flex-col gap-6"
+        >
+          <div class="space-y-4">
+            <h2 class="text-3xl sm:text-4xl font-semibold tracking-tight">
+              Practice Your Spoken English
+            </h2>
+            <p class="text-slate-400 text-base sm:text-lg leading-relaxed">
+              This interactive practice mimics the format of a Versant speaking test. Work
+              through five activities that assess listening, speaking, grammar, and
+              storytelling skills. Your responses are stored locally so you can review them
+              after each activity.
+            </p>
+          </div>
+          <div class="flex flex-wrap justify-center gap-4">
+            <button
+              id="startTest"
+              class="inline-flex items-center gap-2 rounded-full bg-emerald-400 text-slate-900 px-6 py-3 text-base font-semibold shadow-lg shadow-emerald-500/30 hover:bg-emerald-300 transition"
+            >
+              Start Test
+            </button>
+            <button
+              id="startInstructions"
+              class="inline-flex items-center gap-2 rounded-full border border-slate-700 px-6 py-3 text-base font-semibold hover:border-emerald-400 hover:text-emerald-300 transition"
+            >
+              View Instructions
+            </button>
+          </div>
+        </section>
+
+        <!-- Test Container -->
+        <section
+          id="testContainer"
+          class="hidden max-w-5xl mx-auto px-4 py-12 space-y-8"
+        >
+          <div
+            id="timerBadge"
+            class="hidden w-fit rounded-full border border-slate-700 px-4 py-2 text-xs uppercase tracking-[0.3em] text-slate-300"
+          >
+            00:00
+          </div>
+
+          <div id="sectionContent" class="space-y-8"></div>
+
+          <div class="flex flex-wrap justify-between items-center gap-4">
+            <button
+              id="prevBtn"
+              class="inline-flex items-center gap-2 rounded-full border border-slate-700 px-5 py-2 text-sm font-semibold hover:border-emerald-400 hover:text-emerald-300 transition disabled:opacity-40"
+            >
+              Previous
+            </button>
+            <div class="flex items-center gap-3">
+              <button
+                id="nextBtn"
+                class="inline-flex items-center gap-2 rounded-full bg-indigo-500 px-5 py-2 text-sm font-semibold shadow-lg shadow-indigo-500/30 hover:bg-indigo-400 transition disabled:opacity-40"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Summary Screen -->
+        <section
+          id="summaryScreen"
+          class="hidden max-w-3xl mx-auto px-4 py-16 space-y-6 text-center"
+        >
+          <div class="space-y-3">
+            <h2 class="text-3xl font-semibold tracking-tight text-slate-100">
+              Great job! Here’s your snapshot
+            </h2>
+            <p class="text-slate-400">
+              Scores are illustrative and calculated locally. Review your responses to reflect
+              on each activity.
+            </p>
+          </div>
+          <div
+            id="summaryMetrics"
+            class="grid gap-4 sm:grid-cols-2 text-left"
+          ></div>
+          <div
+            id="summaryLog"
+            class="text-left space-y-2 bg-slate-800/40 rounded-3xl border border-slate-700 px-6 py-4 max-h-80 overflow-y-auto"
+          ></div>
+          <div class="flex flex-wrap justify-center gap-4">
+            <button
+              id="restartBtn"
+              class="inline-flex items-center gap-2 rounded-full bg-emerald-400 text-slate-900 px-6 py-3 text-base font-semibold shadow-lg shadow-emerald-500/30 hover:bg-emerald-300 transition"
+            >
+              Restart Practice
+            </button>
+          </div>
+        </section>
+      </main>
+
+      <footer class="border-t border-slate-800 bg-slate-900">
+        <div class="max-w-5xl mx-auto px-4 py-6 text-center text-xs uppercase tracking-[0.2em] text-slate-600">
+          Client-side demo • Responses live in your browser
+        </div>
+      </footer>
+    </div>
+
+    <!-- Instructions Modal -->
+    <div
+      id="instructionsModal"
+      class="fixed inset-0 z-40 hidden items-center justify-center bg-slate-950/80 backdrop-blur-sm px-4"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div class="relative w-full max-w-3xl rounded-3xl border border-slate-700 bg-slate-900 p-8 shadow-2xl">
+        <button
+          id="closeInstructions"
+          class="absolute right-4 top-4 rounded-full border border-slate-700 p-2 text-slate-400 hover:border-emerald-400 hover:text-emerald-300 transition"
+          aria-label="Close instructions"
+        >
+          ✕
+        </button>
+        <h2 class="text-2xl font-semibold tracking-tight mb-6">How the practice works</h2>
+        <div class="space-y-4 text-slate-300 text-sm leading-relaxed">
+          <p>
+            Move through five speaking exercises modelled on the Versant format. Each
+            activity has a timer, and your responses are recorded via the browser’s speech
+            recognition. You can re-record when available.
+          </p>
+          <ul class="list-disc list-inside space-y-2 text-slate-400">
+            <li>Use headphones and a quiet space for best results.</li>
+            <li>Grant microphone access when prompted.</li>
+            <li>All data stays in your browser and clears automatically on restart.</li>
+          </ul>
+          <p>
+            If speech recognition is unsupported, text inputs will appear so you can still
+            complete the exercises manually.
+          </p>
+        </div>
+        <div class="mt-8 flex flex-wrap justify-end gap-3">
+          <button
+            id="modalStartTest"
+            class="inline-flex items-center gap-2 rounded-full bg-emerald-400 text-slate-900 px-5 py-2 text-sm font-semibold shadow-lg shadow-emerald-500/30 hover:bg-emerald-300 transition"
+          >
+            Begin Practice
+          </button>
+          <button
+            id="modalClose"
+            class="inline-flex items-center gap-2 rounded-full border border-slate-700 px-5 py-2 text-sm font-semibold hover:border-emerald-400 hover:text-emerald-300 transition"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="script.js"></script>
+  </body>
+</html>
+

@@ -1,0 +1,95 @@
+/* Global utility overrides */
+:root {
+  color-scheme: dark;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* Gradient animations for card transitions */
+.card-fade {
+  animation: cardFade 0.4s ease forwards;
+}
+
+@keyframes cardFade {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Drag & drop helpers */
+.drag-fragment {
+  cursor: grab;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.drag-fragment:active {
+  cursor: grabbing;
+  transform: scale(1.03);
+  box-shadow: 0 10px 24px -14px rgba(14, 165, 233, 0.55);
+}
+
+.drop-target {
+  min-height: 3rem;
+}
+
+.drop-target.active {
+  background-image: linear-gradient(135deg, rgba(56, 189, 248, 0.1), rgba(99, 102, 241, 0.1));
+  border-color: rgba(99, 102, 241, 0.45);
+}
+
+/* Progress ring for recordings */
+.record-pulse {
+  position: relative;
+}
+
+.record-pulse::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 999px;
+  border: 2px solid rgba(248, 113, 113, 0.35);
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+}
+
+/* Scrollbar styling for logs */
+.frosted-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(203, 213, 225, 0.3) transparent;
+}
+
+.frosted-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.frosted-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.frosted-scroll::-webkit-scrollbar-thumb {
+  background: rgba(203, 213, 225, 0.3);
+  border-radius: 16px;
+}
+
+.frosted-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(203, 213, 225, 0.55);
+}
+
