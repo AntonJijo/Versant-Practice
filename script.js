@@ -1,6 +1,6 @@
 /**
- * Gemini-style English Test Practice
- * Client-side SPA using modern CSS and Web APIs only.
+ * Versant Practice Application - Frontend
+ * Handles UI orchestration, audio recording, LLM-based scoring integration
  */
 
 const STORAGE_KEY = 'geminiPracticeSession';
@@ -135,32 +135,41 @@ async function loadQuestionsFromLLM() {
         
         if (response.ok) {
           const data = await response.json();
-          const questions = data.questions;
+          const questions = data.questions || [];
           
           // Map questions to global arrays
           if (type === 'repeats') {
-            repeatPrompts = questions.map((q, i) => ({
-              id: q.id,
-              transcript: q.text,
-              audio: audioBank[`repeat${i+1}`] || audioBank.repeat1
+            repeatPrompts = await Promise.all(questions.map(async (q, i) => {
+              const audio = await generateTextToSpeech(q.text || q.transcript);
+              return {
+                id: q.id,
+                transcript: q.text || q.transcript,
+                audio: audio
+              };
             }));
           } else if (type === 'conversation') {
-            conversationPrompts = questions.map(q => ({
-              id: q.id,
-              audio: audioBank.repeat1,
-              exchange: q.exchange,
-              question: q.question
+            conversationPrompts = await Promise.all(questions.map(async (q) => {
+              const audio = await generateTextToSpeech(q.question);
+              return {
+                id: q.id,
+                audio: audio,
+                exchange: q.exchange || q.question,
+                question: q.question
+              };
             }));
           } else if (type === 'jumbled') {
-            jumbledPrompts = questions.map((q, i) => ({
-              id: q.id,
-              audio: audioBank[`repeat${i+1}`] || audioBank.repeat1,
-              correct: q.correct
+            jumbledPrompts = await Promise.all(questions.map(async (q) => {
+              const audio = await generateTextToSpeech(q.text || q.correct);
+              return {
+                id: q.id,
+                audio: audio,
+                correct: q.correct || q.text
+              };
             }));
           } else if (type === 'dictation') {
             dictationPrompts = questions.map(q => ({
               id: q.id,
-              transcript: q.text
+              transcript: q.text || q.transcript
             }));
           } else if (type === 'fill') {
             fillPrompts = questions.map(q => ({
@@ -171,8 +180,8 @@ async function loadQuestionsFromLLM() {
             }));
           } else if (type === 'passage') {
             passagePrompt = {
-              id: questions.id || 'passage-1',
-              text: questions.text || questions
+              id: questions[0]?.id || 'passage-1',
+              text: questions[0]?.text || questions[0] || passagePrompt.text
             };
           }
         }
@@ -182,6 +191,50 @@ async function loadQuestionsFromLLM() {
     }
   } catch (err) {
     console.error('Failed to load questions from LLM:', err);
+  }
+}
+
+// Play audio - handles both Puter audio objects and data URLs
+async function playAudio(audioSource) {
+  try {
+    if (!audioSource) {
+      console.warn('No audio source provided');
+      return;
+    }
+    
+    // Check if it's a Puter audio object
+    if (audioSource && typeof audioSource === 'object' && audioSource.play) {
+      await audioSource.play();
+    } else if (typeof audioSource === 'string') {
+      // It's a data URL or URL string
+      const audio = new Audio(audioSource);
+      await audio.play();
+    }
+  } catch (err) {
+    console.error('Audio playback failed:', err);
+  }
+}
+
+// Generate audio from text using Puter AI Text-to-Speech
+async function generateTextToSpeech(text) {
+  try {
+    if (!text) return null;
+    
+    // Check if Puter is available
+    if (typeof puter !== 'undefined' && puter.ai && puter.ai.txt2speech) {
+      const audio = await puter.ai.txt2speech(text, {
+        voice: 'Joanna',
+        engine: 'neural',
+        language: 'en-US'
+      });
+      return audio;
+    } else {
+      console.warn('Puter AI not available, using fallback audio');
+      return null;
+    }
+  } catch (err) {
+    console.error('Text-to-speech generation failed:', err);
+    return null;
   }
 }
 
@@ -215,6 +268,11 @@ function attachGlobalEvents() {
   // Next button navigation
   if (dom.nextButton) {
     dom.nextButton.addEventListener('click', () => advanceStep(1));
+  }
+
+  // Download results button
+  if (document.getElementById('downloadResultsBtn')) {
+    document.getElementById('downloadResultsBtn').addEventListener('click', downloadResults);
   }
 }
 
@@ -459,14 +517,14 @@ function renderRepeatsSection(index) {
   repeatItem.innerHTML = `<div class="repeat-text">${prompt.transcript}</div>`;
   wrapper.appendChild(repeatItem);
 
-  const audio = new Audio(prompt.audio);
+  const audioSource = prompt.audio || audioBank.repeat1;
 
   const hooks = {
     onPhaseStart: (phase) => {
       if (phase.id === 'listen') {
         showPhase('listening');
         updateMicIcon(false);
-        audio.play();
+        playAudio(audioSource);
       } else if (phase.id === 'speak') {
         showPhase('speaking');
         triggerBeepFlash();
@@ -557,7 +615,7 @@ function renderConversationSection(index) {
 
   wrapper.appendChild(conversationSection);
 
-  const audio = new Audio(prompt.audio);
+  const audioSource = prompt.audio || audioBank.repeat1;
   const micContainer = renderMicrophoneIcon();
   micContainer.classList.add('hidden');
   wrapper.appendChild(micContainer);
@@ -569,7 +627,7 @@ function renderConversationSection(index) {
         updateMicIcon(false);
         statusText.textContent = 'Listen to the question.';
         animateAudioBars(audioVisualization, true);
-        audio.play();
+        playAudio(audioSource);
       } else if (phase.id === 'speak') {
         showPhase('speaking');
         triggerBeepFlash();
@@ -644,7 +702,7 @@ function renderJumbledSection(index) {
   statusText.textContent = 'Listen to the jumbled sentence.';
   audioContainer.appendChild(statusText);
 
-  const audio = new Audio(prompt.audio);
+  const audioSource = prompt.audio || audioBank.repeat1;
 
   const micContainer = renderMicrophoneIcon();
   micContainer.classList.add('hidden'); 
@@ -657,7 +715,7 @@ function renderJumbledSection(index) {
       if (phase.id === 'listen' || !phase.id) {
         statusText.textContent = 'Listen to the jumbled sentence.';
         animateAudioBars(audioVisualization, true);
-        audio.play();
+        playAudio(audioSource);
       }
     },
     onTimerComplete: () => {
@@ -1127,4 +1185,31 @@ function shuffleArray(array) {
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
   return shuffled;
+}
+
+function downloadResults() {
+  // Download test results as JSON
+  try {
+    const results = {
+      timestamp: new Date().toISOString(),
+      scores: appState.scores,
+      log: appState.log,
+      totalResponses: appState.log.length,
+      responseRate: appState.log.filter(r => r.text).length / appState.log.length
+    };
+
+    const dataStr = JSON.stringify(results, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `versant-results-${Date.now()}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  } catch (err) {
+    console.error('Download error:', err);
+    alert('Failed to download results');
+  }
 }

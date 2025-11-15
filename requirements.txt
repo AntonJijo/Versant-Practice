@@ -2,7 +2,15 @@ fastapi
 uvicorn[standard]
 python-multipart
 soundfile
-nvidia-riva-client
+numpy
+scipy
+librosa
 openai
 python-dotenv
+httpx
+pydantic
+aiofiles
+
+# Optional: Uncomment for Riva ASR support
+# nvidia-riva-client
 

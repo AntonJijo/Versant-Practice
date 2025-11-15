@@ -12,16 +12,20 @@
   </head>
   <body>
     <div id="app">
+      
       <!-- GLOBAL HEADER BAR -->
       <header class="header-bar">
         <div class="header-left">
           <h1 class="test-name">Versant English Test</h1>
         </div>
         <div class="header-center">
-          <span id="progressIndicator" class="progress-indicator">Question 1 of 63</span>
+          <span id="progressIndicator" class="progress-indicator">Question 1 of 6</span>
         </div>
         <div class="header-right">
           <div id="timerDisplay" class="timer-display hidden">00:00</div>
+          <div class="connection-status online">
+            <i class="fas fa-circle"></i> Online
+          </div>
         </div>
       </header>
 
@@ -29,6 +33,9 @@
         <div class="content-wrapper">
           <!-- START SCREEN -->
           <section id="startScreen" class="gemini-card" style="text-align: center;">
+            <div class="start-screen-icon">
+              <i class="fas fa-headphones"></i>
+            </div>
             <h2>Practice Your Spoken English</h2>
             <p>
               This interactive practice mimics the format of a Versant speaking test. Work
@@ -93,16 +100,30 @@
           </section>
 
           <!-- SUMMARY SCREEN -->
-          <section id="summaryScreen" class="hidden gemini-card" style="text-align: center;">
-            <h2>Great job! Here's your snapshot</h2>
-            <p>
-              Scores are illustrative and calculated locally. Review your responses to reflect
-              on each activity.
+          <section id="summaryScreen" class="hidden gemini-card summary-screen">
+            <div class="summary-header">
+              <i class="fas fa-trophy summary-icon"></i>
+              <h2>Great job! Here's your snapshot</h2>
+            </div>
+            <p class="summary-subtitle">
+              Scores are calculated based on pronunciation, fluency, accuracy, and comprehension.
+              Review your responses to identify areas for improvement.
             </p>
+            
+            <!-- SCORE SUMMARY -->
             <div id="summaryMetrics" class="summary-grid"></div>
-            <div id="summaryLog" class="summary-log"></div>
+
+            <!-- DETAILED BREAKDOWN -->
+            <div class="summary-breakdown">
+              <h3>Detailed Breakdown</h3>
+              <div id="summaryLog" class="summary-log"></div>
+            </div>
+
             <div class="gemini-button-container" style="justify-content: center;">
               <button id="restartBtn" class="gemini-button">Restart Practice</button>
+              <button id="downloadResultsBtn" class="gemini-button secondary">
+                Download Results
+              </button>
             </div>
           </section>
         </div>
@@ -110,7 +131,7 @@
 
       <!-- GLOBAL FOOTER BAR -->
       <footer class="footer-bar">
-        <p class="copyright-text">© 2025 Versant Practice</p>
+        <p class="copyright-text">© 2025 Versant Practice Platform</p>
       </footer>
     </div>
 
@@ -122,18 +143,31 @@
         <p>
           Move through six speaking exercises modelled on the Versant format. Each
           activity has a timer, and your responses are recorded via the browser's speech
-          recognition.
+          recognition or direct audio input.
         </p>
+        <div class="instructions-grid">
+          <div class="instruction-card">
+            <i class="fas fa-ear"></i>
+            <h4>Listen</h4>
+            <p>Audio content will play automatically. Listen carefully.</p>
+          </div>
+          <div class="instruction-card">
+            <i class="fas fa-microphone"></i>
+            <h4>Respond</h4>
+            <p>Speak clearly after the prompt. Use a quiet environment.</p>
+          </div>
+          <div class="instruction-card">
+            <i class="fas fa-chart-line"></i>
+            <h4>Score</h4>
+            <p>Get instant feedback and scores for each activity.</p>
+          </div>
+        </div>
         <ul style="margin: 1rem 0; padding-left: 1.5rem; color: var(--on-surface-variant-color);">
           <li>Use headphones and a quiet space for best results.</li>
-          <li>Grant microphone access when prompted.</li>
-          <li>All data stays in your browser and clears automatically on restart.</li>
-          <li>No manual "Next" button—transitions happen automatically.</li>
+          <li>Grant microphone access when prompted by your browser.</li>
+          <li>All data is processed securely and clears on session restart.</li>
+          <li>Transitions happen automatically—no manual buttons needed.</li>
         </ul>
-        <p>
-          If speech recognition is unsupported, text inputs will appear so you can still
-          complete the exercises manually.
-        </p>
         <div class="gemini-button-container" style="justify-content: flex-end; margin-top: 2rem;">
           <button id="modalClose" class="gemini-button secondary">Close</button>
           <button id="modalStartTest" class="gemini-button">Begin Practice</button>
@@ -141,6 +175,8 @@
       </div>
     </div>
 
+    <script src="https://js.puter.com/v2/"></script>
+    <script src="https://js.puter.com/v2/"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
     <script type="module" src="script.js"></script>
