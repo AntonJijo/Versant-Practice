@@ -3,210 +3,146 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Versant Style English Test</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Versant English Test</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css" />
   </head>
-  <body class="bg-slate-900 text-slate-100 font-inter">
-    <div id="app" class="min-h-screen flex flex-col">
-      <header
-        class="border-b border-slate-800 bg-slate-900/80 backdrop-blur-sm sticky top-0 z-20"
-      >
-        <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div class="flex items-center gap-3">
-            <span
-              class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400 font-semibold"
-            >
-              VT
-            </span>
-            <h1 class="text-lg sm:text-xl font-semibold tracking-tight">
-              Versant Style English Test
-            </h1>
-          </div>
-          <button
-            id="openInstructions"
-            class="hidden sm:inline-flex items-center gap-2 rounded-full border border-slate-700 px-4 py-2 text-sm font-medium hover:border-emerald-400 hover:text-emerald-300 transition"
-          >
-            Instructions
-          </button>
+  <body>
+    <div id="app">
+      <!-- GLOBAL HEADER BAR -->
+      <header class="header-bar">
+        <div class="header-left">
+          <h1 class="test-name">Versant English Test</h1>
         </div>
-        <div class="border-t border-slate-800 bg-slate-900">
-          <div class="max-w-5xl mx-auto px-4 py-2">
-            <div class="flex items-center gap-3 text-xs uppercase tracking-[0.2em] text-slate-400">
-              <span>Progress</span>
-              <div class="grow h-2 rounded-full bg-slate-800 overflow-hidden">
-                <div
-                  id="progressBar"
-                  class="h-full w-0 rounded-full bg-gradient-to-r from-emerald-400 via-sky-400 to-indigo-500 transition-all duration-500"
-                ></div>
-              </div>
-              <span id="progressLabel" class="font-semibold text-slate-300">0%</span>
-            </div>
-          </div>
+        <div class="header-center">
+          <span id="progressIndicator" class="progress-indicator">Question 1 of 63</span>
+        </div>
+        <div class="header-right">
+          <div id="timerDisplay" class="timer-display hidden">00:00</div>
         </div>
       </header>
 
-      <main class="flex-1">
-        <!-- Start Screen -->
-        <section
-          id="startScreen"
-          class="max-w-3xl mx-auto px-4 py-16 text-center flex flex-col gap-6"
-        >
-          <div class="space-y-4">
-            <h2 class="text-3xl sm:text-4xl font-semibold tracking-tight">
-              Practice Your Spoken English
-            </h2>
-            <p class="text-slate-400 text-base sm:text-lg leading-relaxed">
+      <main class="main-content">
+        <div class="content-wrapper">
+          <!-- START SCREEN -->
+          <section id="startScreen" class="gemini-card" style="text-align: center;">
+            <h2>Practice Your Spoken English</h2>
+            <p>
               This interactive practice mimics the format of a Versant speaking test. Work
-              through five activities that assess listening, speaking, grammar, and
-              storytelling skills. Your responses are stored locally so you can review them
-              after each activity.
+              through various activities that assess listening, speaking, grammar, and
+              storytelling skills.
             </p>
-          </div>
-          <div class="flex flex-wrap justify-center gap-4">
-            <button
-              id="startTest"
-              class="inline-flex items-center gap-2 rounded-full bg-emerald-400 text-slate-900 px-6 py-3 text-base font-semibold shadow-lg shadow-emerald-500/30 hover:bg-emerald-300 transition"
-            >
-              Start Test
-            </button>
-            <button
-              id="startInstructions"
-              class="inline-flex items-center gap-2 rounded-full border border-slate-700 px-6 py-3 text-base font-semibold hover:border-emerald-400 hover:text-emerald-300 transition"
-            >
-              View Instructions
-            </button>
-          </div>
-        </section>
-
-        <!-- Test Container -->
-        <section
-          id="testContainer"
-          class="hidden max-w-5xl mx-auto px-4 py-12 space-y-8"
-        >
-          <div
-            id="timerBadge"
-            class="hidden w-fit rounded-full border border-slate-700 px-4 py-2 text-xs uppercase tracking-[0.3em] text-slate-300"
-          >
-            00:00
-          </div>
-
-          <div id="sectionContent" class="space-y-8"></div>
-
-          <div class="flex flex-wrap justify-between items-center gap-4">
-            <button
-              id="prevBtn"
-              class="inline-flex items-center gap-2 rounded-full border border-slate-700 px-5 py-2 text-sm font-semibold hover:border-emerald-400 hover:text-emerald-300 transition disabled:opacity-40"
-            >
-              Previous
-            </button>
-            <div class="flex items-center gap-3">
-              <button
-                id="nextBtn"
-                class="inline-flex items-center gap-2 rounded-full bg-indigo-500 px-5 py-2 text-sm font-semibold shadow-lg shadow-indigo-500/30 hover:bg-indigo-400 transition disabled:opacity-40"
-              >
-                Next
+            <div class="gemini-button-container" style="justify-content: center;">
+              <button id="startTest" class="gemini-button">Start Test</button>
+              <button id="startInstructions" class="gemini-button secondary">
+                View Instructions
               </button>
             </div>
-          </div>
-        </section>
+          </section>
 
-        <!-- Summary Screen -->
-        <section
-          id="summaryScreen"
-          class="hidden max-w-3xl mx-auto px-4 py-16 space-y-6 text-center"
-        >
-          <div class="space-y-3">
-            <h2 class="text-3xl font-semibold tracking-tight text-slate-100">
-              Great job! Here’s your snapshot
-            </h2>
-            <p class="text-slate-400">
+          <!-- TEST CONTAINER -->
+          <section id="testContainer" class="hidden test-section">
+            <!-- MAIN INTERACTION PANEL -->
+            <div class="interaction-panel">
+              
+              <!-- LISTENING PHASE -->
+              <div id="listeningPhase" class="phase-container hidden">
+                <div class="phase-label">Listening to the content...</div>
+                <div class="waveform-visualizer">
+                  <div class="waveform-bar"></div>
+                  <div class="waveform-bar"></div>
+                  <div class="waveform-bar"></div>
+                  <div class="waveform-bar"></div>
+                  <div class="waveform-bar"></div>
+                  <div class="waveform-bar"></div>
+                  <div class="waveform-bar"></div>
+                </div>
+              </div>
+
+              <!-- SPEAKING PHASE -->
+              <div id="speakingPhase" class="phase-container hidden">
+                <div class="phase-label" id="speakingLabel">Recording... Speak now</div>
+                <div class="microphone-section">
+                  <div id="micIcon" class="mic-icon inactive">
+                    <i class="fas fa-microphone"></i>
+                  </div>
+                  <div id="recordingTimer" class="recording-timer">
+                    <svg class="timer-ring" viewBox="0 0 100 100">
+                      <circle cx="50" cy="50" r="45" class="ring-background"></circle>
+                      <circle cx="50" cy="50" r="45" class="ring-progress"></circle>
+                    </svg>
+                    <span class="timer-text">0s</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- BEEP CUE FLASH -->
+              <div id="beepFlash" class="beep-flash hidden"></div>
+
+              <!-- SECTION CONTENT AREA -->
+              <div id="sectionContent" class="section-content"></div>
+              
+              <!-- NAVIGATION BUTTONS -->
+              <div id="navigationButtons" class="navigation-buttons hidden">
+                <button id="nextButton" class="gemini-button">Next</button>
+              </div>
+            </div>
+          </section>
+
+          <!-- SUMMARY SCREEN -->
+          <section id="summaryScreen" class="hidden gemini-card" style="text-align: center;">
+            <h2>Great job! Here's your snapshot</h2>
+            <p>
               Scores are illustrative and calculated locally. Review your responses to reflect
               on each activity.
             </p>
-          </div>
-          <div
-            id="summaryMetrics"
-            class="grid gap-4 sm:grid-cols-2 text-left"
-          ></div>
-          <div
-            id="summaryLog"
-            class="text-left space-y-2 bg-slate-800/40 rounded-3xl border border-slate-700 px-6 py-4 max-h-80 overflow-y-auto"
-          ></div>
-          <div class="flex flex-wrap justify-center gap-4">
-            <button
-              id="restartBtn"
-              class="inline-flex items-center gap-2 rounded-full bg-emerald-400 text-slate-900 px-6 py-3 text-base font-semibold shadow-lg shadow-emerald-500/30 hover:bg-emerald-300 transition"
-            >
-              Restart Practice
-            </button>
-          </div>
-        </section>
+            <div id="summaryMetrics" class="summary-grid"></div>
+            <div id="summaryLog" class="summary-log"></div>
+            <div class="gemini-button-container" style="justify-content: center;">
+              <button id="restartBtn" class="gemini-button">Restart Practice</button>
+            </div>
+          </section>
+        </div>
       </main>
 
-      <footer class="border-t border-slate-800 bg-slate-900">
-        <div class="max-w-5xl mx-auto px-4 py-6 text-center text-xs uppercase tracking-[0.2em] text-slate-600">
-          Client-side demo • Responses live in your browser
-        </div>
+      <!-- GLOBAL FOOTER BAR -->
+      <footer class="footer-bar">
+        <p class="copyright-text">© 2025 Versant Practice</p>
       </footer>
     </div>
 
-    <!-- Instructions Modal -->
-    <div
-      id="instructionsModal"
-      class="fixed inset-0 z-40 hidden items-center justify-center bg-slate-950/80 backdrop-blur-sm px-4"
-      role="dialog"
-      aria-modal="true"
-    >
-      <div class="relative w-full max-w-3xl rounded-3xl border border-slate-700 bg-slate-900 p-8 shadow-2xl">
-        <button
-          id="closeInstructions"
-          class="absolute right-4 top-4 rounded-full border border-slate-700 p-2 text-slate-400 hover:border-emerald-400 hover:text-emerald-300 transition"
-          aria-label="Close instructions"
-        >
-          ✕
-        </button>
-        <h2 class="text-2xl font-semibold tracking-tight mb-6">How the practice works</h2>
-        <div class="space-y-4 text-slate-300 text-sm leading-relaxed">
-          <p>
-            Move through five speaking exercises modelled on the Versant format. Each
-            activity has a timer, and your responses are recorded via the browser’s speech
-            recognition. You can re-record when available.
-          </p>
-          <ul class="list-disc list-inside space-y-2 text-slate-400">
-            <li>Use headphones and a quiet space for best results.</li>
-            <li>Grant microphone access when prompted.</li>
-            <li>All data stays in your browser and clears automatically on restart.</li>
-          </ul>
-          <p>
-            If speech recognition is unsupported, text inputs will appear so you can still
-            complete the exercises manually.
-          </p>
-        </div>
-        <div class="mt-8 flex flex-wrap justify-end gap-3">
-          <button
-            id="modalStartTest"
-            class="inline-flex items-center gap-2 rounded-full bg-emerald-400 text-slate-900 px-5 py-2 text-sm font-semibold shadow-lg shadow-emerald-500/30 hover:bg-emerald-300 transition"
-          >
-            Begin Practice
-          </button>
-          <button
-            id="modalClose"
-            class="inline-flex items-center gap-2 rounded-full border border-slate-700 px-5 py-2 text-sm font-semibold hover:border-emerald-400 hover:text-emerald-300 transition"
-          >
-            Close
-          </button>
+    <!-- INSTRUCTIONS MODAL -->
+    <div id="instructionsModal" class="modal-overlay hidden">
+      <div class="modal-content">
+        <button id="closeInstructions" class="modal-close-btn">✕</button>
+        <h2>How the practice works</h2>
+        <p>
+          Move through six speaking exercises modelled on the Versant format. Each
+          activity has a timer, and your responses are recorded via the browser's speech
+          recognition.
+        </p>
+        <ul style="margin: 1rem 0; padding-left: 1.5rem; color: var(--on-surface-variant-color);">
+          <li>Use headphones and a quiet space for best results.</li>
+          <li>Grant microphone access when prompted.</li>
+          <li>All data stays in your browser and clears automatically on restart.</li>
+          <li>No manual "Next" button—transitions happen automatically.</li>
+        </ul>
+        <p>
+          If speech recognition is unsupported, text inputs will appear so you can still
+          complete the exercises manually.
+        </p>
+        <div class="gemini-button-container" style="justify-content: flex-end; margin-top: 2rem;">
+          <button id="modalClose" class="gemini-button secondary">Close</button>
+          <button id="modalStartTest" class="gemini-button">Begin Practice</button>
         </div>
       </div>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
     <script type="module" src="script.js"></script>
   </body>
 </html>
-

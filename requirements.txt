@@ -3,4 +3,6 @@ uvicorn[standard]
 python-multipart
 soundfile
 nvidia-riva-client
+openai
+python-dotenv
 
