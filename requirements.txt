@@ -1,16 +1,29 @@
-fastapi
-uvicorn[standard]
-python-multipart
-soundfile
-numpy
-scipy
-librosa
-openai
-python-dotenv
-httpx
-pydantic
-aiofiles
+# Core FastAPI dependencies
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+python-multipart>=0.0.6
+pydantic>=2.0.0
 
-# Optional: Uncomment for Riva ASR support
-# nvidia-riva-client
+# Audio processing
+soundfile>=0.12.0
+numpy>=1.24.0
+
+# OpenAI/DeepSeek LLM client
+openai>=1.0.0
+
+# Environment variables
+python-dotenv>=1.0.0
+
+# HTTP client (used by OpenAI client)
+httpx>=0.25.0
+
+# Async file operations (optional but recommended)
+aiofiles>=23.0.0
+
+# Optional: Advanced audio processing (uncomment if needed)
+scipy>=1.11.0
+librosa>=0.10.0
+
+# Optional: Uncomment for NVIDIA Riva ASR support
+nvidia-riva-client
 

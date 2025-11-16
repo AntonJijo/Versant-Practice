@@ -1,5 +1,21 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException
+"""
+Versant Practice Server - Main Server File
+==========================================
+This is the SINGLE server entry point (app.py) that coordinates all backend functionality.
+It imports and uses other modules:
+- Questions.py: Generates authentic Versant questions using DeepSeek LLM
+- scoring_engine.py: Handles audio/text scoring and evaluation
+
+All server endpoints are defined here. Other .py files are modules that provide
+specific functionality but are not servers themselves.
+
+To run: uvicorn app:app --reload
+"""
+
+from fastapi import FastAPI, UploadFile, File, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 import soundfile as sf
 from openai import OpenAI
 import io
@@ -14,6 +30,7 @@ import logging
 from dotenv import load_dotenv
 
 from scoring_engine import ScoringEngine, QuestionResponse, TestResult
+from Questions import VersantQuestionGenerator, generate_versant_questions
 
 # Load environment variables from .env file
 load_dotenv()
@@ -22,16 +39,27 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# ============================================================================
+# SERVER INITIALIZATION
+# ============================================================================
+# This is the main server file that coordinates all backend functionality
+# It imports and uses other modules (Questions.py, scoring_engine.py) for specific tasks
+
 app = FastAPI(title="Versant Practice API", version="1.0.0")
 
-# Enable CORS
+# Enable CORS - allow all origins for development
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
+
+# Serve static files (HTML, CSS, JS)
+static_dir = Path(__file__).parent
+if (static_dir / "index.html").exists():
+    app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
 # Environment setup
 RIVA_SERVER = os.getenv("RIVA_SERVER", "grpc.nvcf.nvidia.com:443")
@@ -41,15 +69,23 @@ RIVA_AUTH = os.getenv("RIVA_API_KEY", "")
 NVIDIA_API_KEY = os.getenv("NVIDIA_API_KEY", "")
 
 # Check for required API keys
-if not RIVA_AUTH or not NVIDIA_API_KEY:
-    logger.error("Missing API keys for TTS or LLM integration. Check environment variables.")
-    raise RuntimeError("API keys are required for proper functionality.")
+if not NVIDIA_API_KEY:
+    logger.warning("NVIDIA_API_KEY not found. Question generation will use fallback questions.")
+    llm_client = None
+else:
+    # Initialize LLM client (DeepSeek via NVIDIA)
+    llm_client = OpenAI(
+        base_url="https://integrate.api.nvidia.com/v1",
+        api_key=NVIDIA_API_KEY
+    )
 
-# Initialize LLM client (DeepSeek via NVIDIA)
-llm_client = OpenAI(
-    base_url="https://integrate.api.nvidia.com/v1",
-    api_key=NVIDIA_API_KEY
-)
+# Initialize question generator
+try:
+    question_generator = VersantQuestionGenerator(llm_client=llm_client)
+    logger.info("Question generator initialized successfully")
+except Exception as e:
+    logger.warning(f"Question generator initialization failed: {e}. Will use fallback questions.")
+    question_generator = None
 
 # Initialize scoring engine
 try:
@@ -85,67 +121,186 @@ QUESTIONS_CACHE = {}
 SCORING_RESULTS = {}
 
 
+@app.get("/")
+async def root():
+    """Serve the main HTML file"""
+    html_file = Path(__file__).parent / "index.html"
+    if html_file.exists():
+        return FileResponse(html_file)
+    return {"message": "Versant Practice API", "status": "running"}
+
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
     return {
         "status": "ok",
         "service": "Versant Practice API",
-        "scoring_engine": "initialized" if scoring_engine else "failed"
+        "scoring_engine": "initialized" if scoring_engine else "failed",
+        "question_generator": "initialized" if question_generator else "failed"
     }
 
 
 @app.get("/generate-questions")
+async def generate_questions_get(activity_type: str = "repeats", count: Optional[int] = None):
+    """Generate questions via GET request (query parameters)"""
+    return await _generate_questions_internal(activity_type, count)
+
+
 @app.post("/generate-questions")
-async def generate_questions(activity_type: str = "repeats"):
-    """Generate realistic Versant questions using DeepSeek LLM"""
-    cache_key = f"{activity_type}_{datetime.now().strftime('%Y-%m-%d')}"
+async def generate_questions_post(request: Request):
+    """
+    Generate authentic Versant questions using Questions.py module with DeepSeek LLM
     
-    if cache_key in QUESTIONS_CACHE:
-        return {"questions": QUESTIONS_CACHE[cache_key]}
+    Accepts POST requests with JSON body containing:
+    - activity_type: Section type (reading, repeats, short_answer, sentence_builds, story_retelling, open_questions)
+                     Also supports legacy types: conversation, jumbled, dictation, fill, passage
+    - count: Optional number of questions to generate (overrides default)
     
-    prompts = {
-        "repeats": "Generate 3 professional English sentences for a Versant speaking test 'Read Aloud' section. Each sentence should be 12-20 words, contain advanced vocabulary, and focus on business/professional topics. Format as JSON array: [{\"id\": \"repeat-1\", \"text\": \"...\"}]",
-        
-        "conversation": "Generate 2 realistic business conversations with a follow-up question for each. Format as JSON: [{\"id\": \"conv-1\", \"exchange\": \"A: ...\\nB: ...\", \"question\": \"...\"}]",
-        
-        "jumbled": "Generate 3 complex sentences that will be presented as jumbled words for reconstruction. Format as JSON: [{\"id\": \"jumbled-1\", \"correct\": \"complete sentence here\"}]",
-        
-        "dictation": "Generate 3 professional sentences for dictation practice. Format as JSON: [{\"id\": \"dict-1\", \"text\": \"...\"}]",
-        
-        "fill": "Generate 3 sentences with blanks for filling in. Format as JSON: [{\"id\": \"fill-1\", \"sentence\": \"The company's ____ strategy...\", \"answer\": \"word\"}]",
-        
-        "passage": "Generate 1 comprehensive business passage (150-200 words) about professional development or organizational change. Format as JSON: {\"id\": \"passage-1\", \"text\": \"...\"}"
+    Returns:
+        JSON with questions array
+    """
+    try:
+        # Try to get JSON body
+        content_type = request.headers.get("content-type", "")
+        if "application/json" in content_type:
+            body = await request.json()
+            activity_type = body.get("activity_type", "repeats")
+            count = body.get("count", None)
+        else:
+            # Fallback to query params
+            activity_type = request.query_params.get("activity_type", "repeats")
+            count = request.query_params.get("count")
+            if count:
+                try:
+                    count = int(count)
+                except:
+                    count = None
+    except Exception as e:
+        logger.warning(f"Error parsing request: {e}")
+        # Fallback to query params if JSON parsing fails
+        activity_type = request.query_params.get("activity_type", "repeats")
+        count = request.query_params.get("count")
+        if count:
+            try:
+                count = int(count)
+            except:
+                count = None
+    
+    return await _generate_questions_internal(activity_type, count)
+
+
+async def _generate_questions_internal(activity_type: str, count: Optional[int] = None):
+    """
+    Internal function to generate questions
+    """
+    # Map legacy activity types to new Versant section names
+    type_mapping = {
+        "repeats": "repeats",
+        "conversation": "short_answer",  # Map conversation to short answer
+        "jumbled": "sentence_builds",
+        "dictation": "reading",  # Map dictation to reading
+        "fill": "short_answer",  # Map fill to short answer
+        "passage": "story_retelling"
     }
     
+    # Normalize activity type
+    versant_section = type_mapping.get(activity_type, activity_type)
+    
+    cache_key = f"{versant_section}_{datetime.now().strftime('%Y-%m-%d')}"
+    
+    # Check cache
+    if cache_key in QUESTIONS_CACHE:
+        logger.info(f"Returning cached questions for {versant_section}")
+        return {"questions": QUESTIONS_CACHE[cache_key]}
+    
     try:
-        prompt = prompts.get(activity_type, prompts["repeats"])
+        if not question_generator:
+            raise ValueError("Question generator not initialized")
         
-        completion = llm_client.chat.completions.create(
-            model="deepseek-ai/deepseek-r1-0528",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.6,
-            top_p=0.7,
-            max_tokens=2048,
-            stream=False
-        )
-        
-        response_text = completion.choices[0].message.content
-        
-        # Extract JSON from response
-        start_idx = response_text.find('[') if activity_type != "passage" else response_text.find('{')
-        end_idx = response_text.rfind(']') + 1 if activity_type != "passage" else response_text.rfind('}') + 1
-        
-        if start_idx != -1 and end_idx > start_idx:
-            json_str = response_text[start_idx:end_idx]
-            questions = json.loads(json_str)
-            QUESTIONS_CACHE[cache_key] = questions
-            return {"questions": questions}
+        # Generate questions using Questions.py module
+        if versant_section == "reading":
+            questions = question_generator.generate_reading_questions(count or 8)
+        elif versant_section == "repeats":
+            questions = question_generator.generate_repeat_questions(count or 16)
+        elif versant_section == "short_answer":
+            questions = question_generator.generate_short_answer_questions(count or 24)
+        elif versant_section == "sentence_builds":
+            questions = question_generator.generate_sentence_builds(count or 10)
+        elif versant_section == "story_retelling":
+            questions = question_generator.generate_story_retelling(count or 3)
+        elif versant_section == "open_questions":
+            questions = question_generator.generate_open_questions(count or 2)
         else:
-            raise ValueError("Could not extract JSON from response")
-            
+            raise ValueError(f"Unknown activity type: {activity_type}")
+        
+        # Transform questions to match frontend expectations
+        transformed_questions = []
+        for q in questions:
+            if versant_section == "repeats":
+                # Frontend expects: id, transcript, audio
+                transformed_questions.append({
+                    "id": q["id"],
+                    "text": q["text"],
+                    "transcript": q["text"]  # For compatibility
+                })
+            elif versant_section == "short_answer":
+                # Frontend expects: id, question, exchange
+                transformed_questions.append({
+                    "id": q["id"],
+                    "question": q["question"],
+                    "exchange": q["question"]  # For compatibility
+                })
+            elif versant_section == "sentence_builds":
+                # Frontend expects: id, correct, words
+                transformed_questions.append({
+                    "id": q["id"],
+                    "correct": q["correct_sentence"],
+                    "words": q.get("words", q["correct_sentence"].split())
+                })
+            elif versant_section == "story_retelling":
+                # Frontend expects: id, text
+                transformed_questions.append({
+                    "id": q["id"],
+                    "text": q["text"]
+                })
+            else:
+                # Default: pass through
+                transformed_questions.append(q)
+        
+        # Cache questions
+        QUESTIONS_CACHE[cache_key] = transformed_questions
+        logger.info(f"Generated {len(transformed_questions)} questions for {versant_section}")
+        
+        return {"questions": transformed_questions}
+        
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Question generation failed: {str(e)}")
+        logger.error(f"Question generation failed: {e}")
+        # Return fallback questions
+        fallback = _get_fallback_questions(versant_section, count or 3)
+        return {"questions": fallback, "warning": "Using fallback questions due to generation error"}
+
+
+def _get_fallback_questions(section: str, count: int) -> List[Dict]:
+    """Fallback questions if generation fails"""
+    fallbacks = {
+        "repeats": [
+            {"id": "repeat-1", "text": "The meeting will start at three o'clock.", "transcript": "The meeting will start at three o'clock."},
+            {"id": "repeat-2", "text": "She completed the project before the deadline.", "transcript": "She completed the project before the deadline."},
+            {"id": "repeat-3", "text": "We need to discuss the budget for next year.", "transcript": "We need to discuss the budget for next year."},
+        ],
+        "short_answer": [
+            {"id": "short-1", "question": "What time do you usually wake up?", "exchange": "What time do you usually wake up?"},
+            {"id": "short-2", "question": "Where do you work?", "exchange": "Where do you work?"},
+        ],
+        "sentence_builds": [
+            {"id": "build-1", "correct": "The meeting will start at three o'clock this afternoon.", "words": ["afternoon", "at", "meeting", "o'clock", "start", "The", "three", "this", "will"]},
+        ],
+        "story_retelling": [
+            {"id": "story-1", "text": "Last Monday, Sarah arrived at her office at 8:30 AM. She had an important meeting with her manager at 9:00 AM to discuss a new project."},
+        ]
+    }
+    return fallbacks.get(section, [])[:count]
 
 
 @app.post("/evaluate-response")

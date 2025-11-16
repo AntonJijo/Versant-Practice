@@ -5,6 +5,16 @@
 
 const STORAGE_KEY = 'geminiPracticeSession';
 
+// API Configuration - Backend server URL
+// If frontend is on a different port (e.g., Live Server on 5500), set this to your backend URL
+const API_BASE_URL = window.location.port === '5500' || window.location.port === '3000' 
+  ? 'http://localhost:8000'  // Backend API is on port 8000
+  : window.location.origin;   // Same origin if served from backend
+
+// Log API configuration for debugging
+console.log('API Base URL:', API_BASE_URL);
+console.log('Frontend URL:', window.location.origin);
+
 const audioBank = {
   repeat1: 'data:audio/mp3;base64,SUQzAwAAAAAAF1RTU0UAAAAPAAADTGF2ZjU2LjM2LjEwMQAAAAAAAAAAAAAA//uQxAADBQUZABp6AAD//+wbAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP/7kMQAAwUFJwAaegAA//+sGwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
   repeat2: 'data:audio/mp3;base64,SUQzAwAAAAAAF1RTU0UAAAAPAAADTGF2ZjU2LjM2LjEwMQAAAAAAAAAAAAAA//uQxAADBQU5ABp6AAD//9AbAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP/7kMQAAwUFNwAaegAA//9AbAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
@@ -122,31 +132,51 @@ function bootstrap() {
 }
 
 async function loadQuestionsFromLLM() {
+  console.log('Loading questions from LLM...');
   try {
     const activityTypes = ['repeats', 'conversation', 'jumbled', 'dictation', 'fill', 'passage'];
     
     for (const type of activityTypes) {
       try {
-        const response = await fetch('/generate-questions', {
+        console.log(`Fetching ${type} questions from ${API_BASE_URL}/generate-questions`);
+        const response = await fetch(`${API_BASE_URL}/generate-questions`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
           body: JSON.stringify({ activity_type: type })
         });
+        
+        if (!response.ok) {
+          console.error(`Failed to fetch ${type} questions: ${response.status} ${response.statusText}`);
+          console.error(`Response URL: ${response.url}`);
+          // Continue with fallback questions
+          continue;
+        }
         
         if (response.ok) {
           const data = await response.json();
           const questions = data.questions || [];
+          console.log(`Successfully loaded ${questions.length} ${type} questions`);
           
           // Map questions to global arrays
           if (type === 'repeats') {
+            console.log(`Generating audio for ${questions.length} repeat questions using Puter.js...`);
             repeatPrompts = await Promise.all(questions.map(async (q, i) => {
-              const audio = await generateTextToSpeech(q.text || q.transcript);
+              const text = q.text || q.transcript;
+              console.log(`Generating audio for: "${text.substring(0, 50)}..."`);
+              const audio = await generateTextToSpeech(text);
+              if (!audio) {
+                console.warn(`Failed to generate audio for question ${q.id}, using fallback`);
+              }
               return {
                 id: q.id,
-                transcript: q.text || q.transcript,
-                audio: audio
+                transcript: text,
+                audio: audio || audioBank[`repeat${(i % 3) + 1}`] || audioBank.repeat1
               };
             }));
+            console.log(`Completed audio generation for repeats`);
           } else if (type === 'conversation') {
             conversationPrompts = await Promise.all(questions.map(async (q) => {
               const audio = await generateTextToSpeech(q.question);
@@ -186,50 +216,87 @@ async function loadQuestionsFromLLM() {
           }
         }
       } catch (err) {
-        console.warn(`Failed to load ${type} questions:`, err);
+        console.error(`Failed to load ${type} questions:`, err);
+        console.error('Error details:', err.message, err.stack);
       }
     }
+    console.log('Question loading complete. Using:', {
+      repeats: repeatPrompts.length,
+      conversation: conversationPrompts.length,
+      jumbled: jumbledPrompts.length,
+      dictation: dictationPrompts.length,
+      fill: fillPrompts.length,
+      passage: passagePrompt ? 1 : 0
+    });
   } catch (err) {
     console.error('Failed to load questions from LLM:', err);
+    console.error('Error details:', err.message, err.stack);
   }
 }
 
 // Play audio - handles both Puter audio objects and data URLs
-async function playAudio(audioSource) {
+async function playAudio(audioSource, onEnded = null) {
   try {
     if (!audioSource) {
       console.warn('No audio source provided');
-      return;
+      return null;
     }
+    
+    let audioElement = null;
     
     // Check if it's a Puter audio object
     if (audioSource && typeof audioSource === 'object' && audioSource.play) {
-      await audioSource.play();
+      audioElement = audioSource;
+      if (onEnded) {
+        audioElement.addEventListener('ended', onEnded);
+      }
+      await audioElement.play();
     } else if (typeof audioSource === 'string') {
       // It's a data URL or URL string
-      const audio = new Audio(audioSource);
-      await audio.play();
+      audioElement = new Audio(audioSource);
+      if (onEnded) {
+        audioElement.addEventListener('ended', onEnded);
+      }
+      await audioElement.play();
     }
+    
+    return audioElement;
   } catch (err) {
     console.error('Audio playback failed:', err);
+    return null;
   }
 }
 
 // Generate audio from text using Puter AI Text-to-Speech
 async function generateTextToSpeech(text) {
   try {
-    if (!text) return null;
+    if (!text) {
+      console.warn('No text provided for TTS');
+      return null;
+    }
     
     // Check if Puter is available
+    if (typeof puter === 'undefined') {
+      console.warn('Puter.js not loaded yet, waiting...');
+      // Wait a bit for Puter to load
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+    
     if (typeof puter !== 'undefined' && puter.ai && puter.ai.txt2speech) {
+      console.log('Using Puter.js TTS for:', text.substring(0, 50));
       const audio = await puter.ai.txt2speech(text, {
         voice: 'Joanna',
         engine: 'neural',
         language: 'en-US'
       });
+      console.log('Puter.js TTS generated successfully');
       return audio;
     } else {
-      console.warn('Puter AI not available, using fallback audio');
+      console.warn('Puter AI not available:', {
+        puter: typeof puter,
+        puter_ai: typeof puter !== 'undefined' ? typeof puter.ai : 'undefined',
+        txt2speech: typeof puter !== 'undefined' && puter.ai ? typeof puter.ai.txt2speech : 'undefined'
+      });
       return null;
     }
   } catch (err) {
@@ -569,10 +636,6 @@ function renderRepeatsSection(index) {
     }
   };
 
-  audio.onended = () => {
-    // Audio listening phase ended, speaking phase will start via timer
-  };
-
   return { node: wrapper, hooks, timerProfile: section.timerProfile };
 }
 
@@ -620,6 +683,8 @@ function renderConversationSection(index) {
   micContainer.classList.add('hidden');
   wrapper.appendChild(micContainer);
 
+  let currentAudio = null;
+  
   const hooks = {
     onPhaseStart: (phase) => {
       if (phase.id === 'listen') {
@@ -627,7 +692,12 @@ function renderConversationSection(index) {
         updateMicIcon(false);
         statusText.textContent = 'Listen to the question.';
         animateAudioBars(audioVisualization, true);
-        playAudio(audioSource);
+        playAudio(audioSource, () => {
+          animateAudioBars(audioVisualization, false);
+          statusText.textContent = 'Question complete. Ready to answer.';
+        }).then(audio => {
+          currentAudio = audio;
+        });
       } else if (phase.id === 'speak') {
         showPhase('speaking');
         triggerBeepFlash();
@@ -673,11 +743,6 @@ function renderConversationSection(index) {
     }
   };
 
-  audio.onended = () => {
-    animateAudioBars(audioVisualization, false);
-    statusText.textContent = 'Question complete. Ready to answer.';
-  };
-
   return { node: wrapper, hooks, timerProfile: section.timerProfile };
 }
 
@@ -715,20 +780,11 @@ function renderJumbledSection(index) {
       if (phase.id === 'listen' || !phase.id) {
         statusText.textContent = 'Listen to the jumbled sentence.';
         animateAudioBars(audioVisualization, true);
-        playAudio(audioSource);
-      }
-    },
-    onTimerComplete: () => {
-      stopRecognition();
-      advanceStep(1);
-    }
-  };
-
-  audio.onended = () => {
-    animateAudioBars(audioVisualization, false);
-    statusText.textContent = 'Now, form a sentence by speaking.';
-    micContainer.classList.remove('hidden');
-    startRecognition({
+        playAudio(audioSource, () => {
+          animateAudioBars(audioVisualization, false);
+          statusText.textContent = 'Now, form a sentence by speaking.';
+          micContainer.classList.remove('hidden');
+          startRecognition({
       onResult: (text) => {
         const isCorrect = text.trim().toLowerCase() === prompt.correct.trim().toLowerCase();
         response.recognized = text;
@@ -761,6 +817,15 @@ function renderJumbledSection(index) {
         }
       }
     });
+        }).then(audio => {
+          // Audio playback started
+        });
+      }
+    },
+    onTimerComplete: () => {
+      stopRecognition();
+      advanceStep(1);
+    }
   };
 
   return { node: wrapper, hooks };
@@ -788,15 +853,14 @@ function renderDictationSection(index) {
   statusText.textContent = 'Listen to the sentence.';
   audioContainer.appendChild(statusText);
 
-  const audio = new Audio(audioBank.repeat1); // Placeholder audio for dictation
+  const audioSource = audioBank.repeat1; // Placeholder audio for dictation
 
   const hooks = {
     onPhaseStart: (phase) => {
       if (phase.id === 'default' || !phase.id) { // Assuming a single phase for dictation
         statusText.textContent = 'Listening to sentence...';
         animateAudioBars(audioVisualization, true);
-        audio.play();
-        audio.onended = () => {
+        playAudio(audioSource, () => {
           animateAudioBars(audioVisualization, false);
           audioContainer.innerHTML = ''; // Clear audio visualization
           
@@ -841,7 +905,7 @@ function renderDictationSection(index) {
             response.typed = textBox.value;
             persistState();
           });
-        };
+        });
       }
     },
     onTimerComplete: () => {
@@ -1103,9 +1167,12 @@ function renderSummary() {
 
 async function evaluateResponse(userResponse, activityType, referenceText = null) {
   try {
-    const response = await fetch('/evaluate-response', {
+    const response = await fetch(`${API_BASE_URL}/evaluate-response`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
       body: JSON.stringify({
         user_response: userResponse,
         activity_type: activityType,

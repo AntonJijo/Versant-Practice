@@ -32,10 +32,28 @@ RIVA_API_KEY=your_riva_key_here  # Optional
 
 3. Start the server:
 ```bash
-uvicorn app:app --reload
+uvicorn app:app --reload --host 0.0.0.0 --port 8000
 ```
 
-Server runs on `http://localhost:8000`
+4. Open your browser and navigate to:
+```
+http://localhost:8000
+```
+
+The server will serve both the API endpoints and the frontend HTML/CSS/JS files.
+
+## Important Notes
+
+### Puter.js Text-to-Speech
+- **No API key required** - Puter.js TTS works without authentication for basic usage
+- The 401 error from `api.puter.com/whoami` is normal and can be ignored - it's just Puter checking authentication status
+- If Puter TTS is unavailable, the app will use fallback audio or skip audio generation
+
+### API Endpoints
+- `GET /` - Serves the main HTML page
+- `POST /generate-questions` - Generate Versant questions (requires NVIDIA_API_KEY)
+- `GET /health` - Health check endpoint
+- All other endpoints are for scoring and evaluation
 
 ## Project Structure
 
