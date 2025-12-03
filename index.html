@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Versant English Test</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <div id="app">
+
+    <!-- GLOBAL HEADER BAR -->
+    <header class="header-bar">
+      <div class="header-left">
+        <h1 class="test-name">Versant English Test</h1>
+      </div>
+      <div class="header-center">
+        <span id="progressIndicator" class="progress-indicator">Question 1 of 6</span>
+      </div>
+      <div class="header-right">
+        <div id="timerDisplay" class="timer-display hidden">00:00</div>
+        <div class="connection-status online">
+          <i class="fas fa-circle"></i> Online
+        </div>
+      </div>
+    </header>
+
+    <main class="main-content">
+      <div class="content-wrapper">
+        <!-- START SCREEN -->
+        <section id="startScreen" class="gemini-card" style="text-align: center;">
+          <div class="start-screen-icon">
+            <i class="fas fa-headphones"></i>
+          </div>
+          <h2>Practice Your Spoken English</h2>
+          <p>
+            This interactive practice mimics the format of a Versant speaking test. Work
+            through various activities that assess listening, speaking, grammar, and
+            storytelling skills.
+          </p>
+          <div class="gemini-button-container" style="justify-content: center;">
+            <button id="startTest" class="gemini-button">Start Test</button>
+            <button id="startInstructions" class="gemini-button secondary">
+              View Instructions
+            </button>
+          </div>
+        </section>
+
+        <!-- LOADING SCREEN -->
+        <section id="loadingScreen" class="gemini-card hidden"
+          style="text-align: center; min-height: 400px; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+          <div aria-live="assertive" role="alert" class="loader"></div>
+          <div style="margin-top: 60px;"> <!-- Spacer for the loader size -->
+            <h2 class="gradient-text-glow" style="margin-top: 1rem;">Preparing Your Test</h2>
+            <p>Generating unique questions for your session...</p>
+            <div id="loadingStatus" style="margin-top: 1rem; color: var(--on-surface-variant-color);">
+              Initializing...
+            </div>
+          </div>
+        </section>
+
+        <!-- TEST CONTAINER -->
+        <section id="testContainer" class="hidden test-section">
+          <!-- MAIN INTERACTION PANEL -->
+          <div class="interaction-panel">
+
+            <!-- LISTENING PHASE -->
+            <div id="listeningPhase" class="phase-container hidden">
+              <div class="phase-label">Listening to the content...</div>
+              <div class="waveform-visualizer">
+                <div class="waveform-bar"></div>
+                <div class="waveform-bar"></div>
+                <div class="waveform-bar"></div>
+                <div class="waveform-bar"></div>
+                <div class="waveform-bar"></div>
+                <div class="waveform-bar"></div>
+                <div class="waveform-bar"></div>
+              </div>
+            </div>
+
+            <!-- SPEAKING PHASE -->
+            <div id="speakingPhase" class="phase-container hidden">
+              <div class="phase-label" id="speakingLabel">Recording... Speak now</div>
+              <div class="microphone-section">
+                <div id="micIcon" class="mic-icon inactive">
+                  <i class="fas fa-microphone"></i>
+                </div>
+                <div id="recordingTimer" class="recording-timer">
+                  <svg class="timer-ring" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="45" class="ring-background"></circle>
+                    <circle cx="50" cy="50" r="45" class="ring-progress"></circle>
+                  </svg>
+                  <span class="timer-text">0s</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- BEEP CUE FLASH -->
+            <div id="beepFlash" class="beep-flash hidden"></div>
+
+            <!-- SECTION CONTENT AREA -->
+            <div id="sectionContent" class="section-content"></div>
+
+            <!-- NAVIGATION BUTTONS -->
+            <div id="navigationButtons" class="navigation-buttons hidden">
+              <button id="nextButton" class="gemini-button">Next</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- SUMMARY SCREEN -->
+        <section id="summaryScreen" class="hidden gemini-card summary-screen">
+          <div class="summary-header">
+            <i class="fas fa-trophy summary-icon"></i>
+            <h2>Great job! Here's your snapshot</h2>
+          </div>
+          <p class="summary-subtitle">
+            Scores are calculated based on pronunciation, fluency, accuracy, and comprehension.
+            Review your responses to identify areas for improvement.
+          </p>
+
+          <!-- SCORE SUMMARY -->
+          <div id="summaryMetrics" class="summary-grid"></div>
+
+          <!-- DETAILED BREAKDOWN -->
+          <div class="summary-breakdown">
+            <h3>Detailed Breakdown</h3>
+            <div id="summaryLog" class="summary-log"></div>
+          </div>
+
+          <div class="gemini-button-container" style="justify-content: center;">
+            <button id="restartBtn" class="gemini-button">Restart Practice</button>
+            <button id="downloadResultsBtn" class="gemini-button secondary">
+              Download Results
+            </button>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <!-- GLOBAL FOOTER BAR -->
+    <footer class="footer-bar">
+      <p class="copyright-text">© 2025 Versant Practice Platform</p>
+    </footer>
+  </div>
+
+  <!-- EMAIL VERIFICATION MODAL -->
+  <div id="emailModal" class="modal-overlay" style="z-index: 200;">
+    <div class="modal-content" style="text-align: center; max-width: 500px;">
+      <div style="font-size: 3rem; color: var(--primary-color); margin-bottom: 1rem;">
+        <i class="fas fa-shield-alt"></i>
+      </div>
+      <h2>Authentication Required</h2>
+      <p>Please enter your authorized email address to proceed.</p>
+
+      <div style="margin: 2rem 0;">
+        <input type="email" id="emailInput" placeholder="Enter your email address"
+          style="width: 100%; padding: 1rem; border-radius: 0.5rem; border: 2px solid var(--border-color); background: var(--background-color); color: var(--on-surface-color); font-size: 1rem;">
+        <div id="emailError"
+          style="color: var(--error-color); margin-top: 0.5rem; font-size: 0.9rem; min-height: 1.2em;"></div>
+      </div>
+
+      <button id="verifyEmailBtn" class="gemini-button" style="width: 100%;">Verify & Proceed</button>
+    </div>
+  </div>
+
+  <!-- INSTRUCTIONS MODAL -->
+  <div id="instructionsModal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <button id="closeInstructions" class="modal-close-btn">✕</button>
+      <h2>How the practice works</h2>
+      <p>
+        Move through six speaking exercises modelled on the Versant format. Each
+        activity has a timer, and your responses are recorded via the browser's speech
+        recognition or direct audio input.
+      </p>
+      <div class="instructions-grid">
+        <div class="instruction-card">
+          <i class="fas fa-ear"></i>
+          <h4>Listen</h4>
+          <p>Audio content will play automatically. Listen carefully.</p>
+        </div>
+        <div class="instruction-card">
+          <i class="fas fa-microphone"></i>
+          <h4>Respond</h4>
+          <p>Speak clearly after the prompt. Use a quiet environment.</p>
+        </div>
+        <div class="instruction-card">
+          <i class="fas fa-chart-line"></i>
+          <h4>Score</h4>
+          <p>Get instant feedback and scores for each activity.</p>
+        </div>
+      </div>
+      <ul style="margin: 1rem 0; padding-left: 1.5rem; color: var(--on-surface-variant-color);">
+        <li>Use headphones and a quiet space for best results.</li>
+        <li>Grant microphone access when prompted by your browser.</li>
+        <li>All data is processed securely and clears on session restart.</li>
+        <li>Transitions happen automatically—no manual buttons needed.</li>
+      </ul>
+      <div class="gemini-button-container" style="justify-content: flex-end; margin-top: 2rem;">
+        <button id="modalClose" class="gemini-button secondary">Close</button>
+        <button id="modalStartTest" class="gemini-button">Begin Practice</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://js.puter.com/v2/"></script>
+  <script>
+    // Wait for Puter.js to load before initializing
+    window.addEventListener('DOMContentLoaded', () => {
+      console.log('DOM loaded, checking Puter.js...');
+      if (typeof puter !== 'undefined') {
+        console.log('Puter.js loaded successfully');
+      } else {
+        console.warn('Puter.js not yet loaded, will retry');
+      }
+    });
+  </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="background_animation.js"></script>
+  <script type="module" src="script.js"></script>
+</body>
+
+</html>
