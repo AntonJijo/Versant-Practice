@@ -149,4 +149,4 @@ curl -X POST http://localhost:8000/score/audio \
 
 ## License
 
-MIT License - See LICENSE file for details
+**MIT License** - See LICENSE file for details
